@@ -1,206 +1,408 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" >
 <head>
   <meta charset="UTF-8" />
-  <title>Ball Bounce Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Paddle Ball Brick Breaker Game</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron&display=swap');
+
     body {
       margin: 0;
-      background: linear-gradient(135deg, #0f0f0f, #1f1f1f);
-      overflow: hidden;
-      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
       color: #00ffe0;
+      font-family: 'Orbitron', monospace;
+      user-select: none;
+      -webkit-user-select: none;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100vh;
+    }
+    h1 {
+      margin: 10px 0 0;
+      font-weight: 700;
       text-align: center;
+      text-shadow: 0 0 8px #00ffe0;
     }
+
     canvas {
-      background: #222;
-      display: block;
-      margin: 20px auto;
+      background: #111;
       border: 3px solid #00ffe0;
-      box-shadow: 0 0 25px #00ffe0;
+      border-radius: 12px;
+      box-shadow: 0 0 15px #00ffe0;
+      margin-top: 15px;
+      touch-action: none;
+      display: block;
+      max-width: 100vw;
     }
-    #scoreboard {
-      font-size: 18px;
+
+    #infoBar {
+      margin-top: 10px;
+      width: 700px;
+      max-width: 95vw;
+      display: flex;
+      justify-content: space-between;
+      font-size: 20px;
+      text-shadow: 0 0 6px #00ffe0;
     }
-    button {
+
+    #score, #highscore, #lives {
+      user-select: none;
+    }
+
+    #restartBtn {
+      margin-top: 12px;
+      padding: 8px 20px;
       background: #00ffe0;
       border: none;
-      color: #000;
-      padding: 10px 20px;
-      font-size: 16px;
-      margin-top: 10px;
+      border-radius: 6px;
+      color: #111;
+      font-weight: 700;
+      font-size: 18px;
       cursor: pointer;
-      border-radius: 5px;
-      transition: 0.3s ease;
+      box-shadow: 0 0 10px #00ffe0;
+      transition: background-color 0.3s ease;
     }
-    button:hover {
-      background: #00c2a0;
+    #restartBtn:hover {
+      background: #0ff;
+    }
+
+    /* Brick style */
+    .brick {
+      position: absolute;
+      background: #00ffe0;
+      border-radius: 4px;
+      box-shadow: 0 0 8px #00ffe0;
     }
   </style>
 </head>
 <body>
-  <h1>🏓 Ball Bounce Game</h1>
-  <div id="scoreboard">
-    Score: <span id="score">0</span> | High Score: <span id="highscore">0</span>
+  <h1>Paddle Ball Brick Breaker</h1>
+
+  <canvas id="gameCanvas" width="700" height="500"></canvas>
+
+  <div id="infoBar">
+    <div>Score: <span id="score">0</span></div>
+    <div>High Score: <span id="highscore">0</span></div>
+    <div>Lives: <span id="lives">3</span> ❤️</div>
   </div>
-  <canvas id="gameCanvas" width="800" height="500"></canvas>
-  <button onclick="restartGame()">Restart Game</button>
 
-  <!-- 🔊 Audio -->
-  <audio id="bounceSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_2e7d6f7351.mp3" preload="auto"></audio>
-  <audio id="gameOverSound" src="https://cdn.pixabay.com/download/audio/2022/10/30/audio_d3b30c2e9c.mp3" preload="auto"></audio>
-  <audio id="bgMusic" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_3c184eb302.mp3" loop autoplay preload="auto"></audio>
+  <button id="restartBtn">Restart Game</button>
 
-  <script>
+  <!-- Sounds -->
+  <audio id="bounceSound" src="https://actions.google.com/sounds/v1/sports/ball_bounce.ogg" preload="auto"></audio>
+  <audio id="brickSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
+  <audio id="gameOverSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" preload="auto"></audio>
+  <audio id="bgMusic" src="https://cdn.pixabay.com/download/audio/2022/04/21/audio_cfa39371b1.mp3?filename=futuristic-arcade-9385.mp3" preload="auto" loop></audio>
+
+<script>
   const canvas = document.getElementById("gameCanvas");
   const ctx = canvas.getContext("2d");
   const scoreEl = document.getElementById("score");
   const highScoreEl = document.getElementById("highscore");
+  const livesEl = document.getElementById("lives");
+  const restartBtn = document.getElementById("restartBtn");
+
   const bounceSound = document.getElementById("bounceSound");
+  const brickSound = document.getElementById("brickSound");
   const gameOverSound = document.getElementById("gameOverSound");
   const bgMusic = document.getElementById("bgMusic");
 
-  let paddle = {
+  // Paddle properties
+  const paddle = {
     width: 120,
     height: 15,
     x: canvas.width / 2 - 60,
-    y: canvas.height - 30,
-    speed: 10
+    y: canvas.height - 40,
+    speed: 40 // keyboard speed per keypress
   };
 
-  let ball, score, highScore, gameOver;
+  // Ball properties
+  let ball = {
+    x: canvas.width / 2,
+    y: canvas.height / 2,
+    radius: 10,
+    speed: 5,
+    dx: 5,
+    dy: -5,
+    trail: []
+  };
 
-  function initGame() {
-    ball = {
-      x: canvas.width / 2,
-      y: canvas.height / 2,
-      radius: 10,
-      dx: 4,
-      dy: -4
-    };
-    score = 0;
-    gameOver = false;
-    scoreEl.textContent = score;
-    highScore = localStorage.getItem("highScore") || 0;
-    highScoreEl.textContent = highScore;
+  // Bricks properties
+  const brickRowCount = 5;
+  const brickColumnCount = 8;
+  const brickWidth = 75;
+  const brickHeight = 20;
+  const brickPadding = 10;
+  const brickOffsetTop = 50;
+  const brickOffsetLeft = 30;
+
+  let bricks = [];
+  let score = 0;
+  let highScore = localStorage.getItem("highScore") || 0;
+  let lives = 3;
+  let gameOver = false;
+
+  // Initialize bricks array
+  function initBricks() {
+    bricks = [];
+    for(let c=0; c<brickColumnCount; c++) {
+      bricks[c] = [];
+      for(let r=0; r<brickRowCount; r++) {
+        bricks[c][r] = { x: 0, y: 0, status: 1 }; // status 1 = visible
+      }
+    }
   }
 
+  // Draw bricks on canvas
+  function drawBricks() {
+    for(let c=0; c<brickColumnCount; c++) {
+      for(let r=0; r<brickRowCount; r++) {
+        if(bricks[c][r].status === 1) {
+          const brickX = (c*(brickWidth + brickPadding)) + brickOffsetLeft;
+          const brickY = (r*(brickHeight + brickPadding)) + brickOffsetTop;
+          bricks[c][r].x = brickX;
+          bricks[c][r].y = brickY;
+          ctx.fillStyle = '#00ffe0';
+          ctx.shadowColor = '#00ffe0';
+          ctx.shadowBlur = 10;
+          ctx.fillRect(brickX, brickY, brickWidth, brickHeight);
+          ctx.shadowBlur = 0;
+        }
+      }
+    }
+  }
+
+  // Draw paddle
   function drawPaddle() {
     ctx.fillStyle = "#00ffe0";
+    ctx.shadowColor = '#00ffe0';
+    ctx.shadowBlur = 15;
     ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+    ctx.shadowBlur = 0;
   }
 
+  // Draw ball with trail
   function drawBall() {
+    // Add current ball position to trail
+    ball.trail.push({x: ball.x, y: ball.y});
+    if(ball.trail.length > 15) ball.trail.shift();
+
+    // Draw trail (fading circles)
+    for(let i = 0; i < ball.trail.length; i++) {
+      const pos = ball.trail[i];
+      const alpha = i / ball.trail.length / 2;
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, ball.radius, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(0, 255, 224, ${alpha})`;
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    // Draw main ball
     ctx.beginPath();
-    ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-    ctx.fillStyle = "#fff";
+    ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI*2);
+    ctx.fillStyle = '#00ffe0';
+    ctx.shadowColor = '#00ffe0';
+    ctx.shadowBlur = 20;
     ctx.fill();
     ctx.closePath();
+    ctx.shadowBlur = 0;
   }
 
-  function movePaddle(e) {
-    if (e.key === "ArrowLeft" && paddle.x > 0) paddle.x -= paddle.speed;
-    if (e.key === "ArrowRight" && paddle.x + paddle.width < canvas.width)
-      paddle.x += paddle.speed;
-  }
+  // Draw score, lives and highscore text (optional, handled by DOM)
 
-  function update() {
-    if (gameOver) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    drawPaddle();
-    drawBall();
-
+  // Move ball
+  function moveBall() {
     ball.x += ball.dx;
     ball.y += ball.dy;
+  }
 
-    // Wall collision
-    if (ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0) {
-      ball.dx *= -1;
+  // Detect collisions
+  function detectCollisions() {
+    // Ball collision with walls (left/right)
+    if(ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0) {
+      ball.dx = -ball.dx;
+      bounceSound.play();
     }
-
-    if (ball.y - ball.radius < 0) {
-      ball.dy *= -1;
-    }
-
-    // Paddle bounce
-    if (
-      ball.y + ball.radius >= paddle.y &&
-      ball.x >= paddle.x &&
-      ball.x <= paddle.x + paddle.width
-    ) {
-      ball.dy *= -1;
-      score++;
-      scoreEl.textContent = score;
-      bounceSound.currentTime = 0;
+    // Ball collision with top wall
+    if(ball.y - ball.radius < 0) {
+      ball.dy = -ball.dy;
       bounceSound.play();
     }
 
-    // Game Over
-    if (ball.y + ball.radius > canvas.height) {
-      gameOver = true;
-      ctx.font = "36px Arial";
-      ctx.fillStyle = "#f00";
-      ctx.fillText("Game Over", canvas.width / 2 - 100, canvas.height / 2);
-      gameOverSound.play();
+    // Ball collision with paddle
+    if(ball.y + ball.radius >= paddle.y &&
+       ball.x >= paddle.x &&
+       ball.x <= paddle.x + paddle.width) {
+      ball.dy = -ball.dy;
+      bounceSound.play();
 
-      if (score > highScore) {
-        localStorage.setItem("highScore", score);
-        highScoreEl.textContent = score;
+      // Increase speed a little on every paddle bounce (max speed cap)
+      if(Math.abs(ball.dx) < 12) {
+        ball.dx *= 1.05;
+        ball.dy *= 1.05;
+      }
+      score++;
+      updateScore();
+    }
+
+    // Ball collision with bricks
+    for(let c=0; c<brickColumnCount; c++) {
+      for(let r=0; r<brickRowCount; r++) {
+        const b = bricks[c][r];
+        if(b.status === 1) {
+          if(ball.x > b.x && ball.x < b.x + brickWidth &&
+             ball.y - ball.radius < b.y + brickHeight && 
+             ball.y + ball.radius > b.y) {
+            ball.dy = -ball.dy;
+            b.status = 0;
+            score += 2;
+            brickSound.play();
+            updateScore();
+          }
+        }
       }
     }
 
+    // Game over check (ball falls below paddle)
+    if(ball.y - ball.radius > canvas.height) {
+      lives--;
+      updateLives();
+      if(lives <= 0) {
+        endGame();
+      } else {
+        resetBallPaddle();
+      }
+    }
+  }
+
+  // Update score display and localStorage highscore
+  function updateScore() {
+    scoreEl.textContent = score;
+    if(score > highScore) {
+      highScore = score;
+      highScoreEl.textContent = highScore;
+      localStorage.setItem("highScore", highScore);
+    }
+  }
+
+  // Update lives display
+  function updateLives() {
+    livesEl.textContent = lives;
+  }
+
+  // Reset ball and paddle positions after losing a life
+  function resetBallPaddle() {
+    ball.x = canvas.width / 2;
+    ball.y = canvas.height / 2;
+    ball.dx = 5 * (Math.random() > 0.5 ? 1 : -1);
+    ball.dy = -5;
+    paddle.x = canvas.width / 2 - paddle.width / 2;
+  }
+
+  // Clamp paddle within canvas bounds
+  function clampPaddle() {
+    if(paddle.x < 0) paddle.x = 0;
+    if(paddle.x + paddle.width > canvas.width) paddle.x = canvas.width - paddle.width;
+  }
+
+  // Draw everything
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBricks();
+    drawPaddle();
+    drawBall();
+  }
+
+  // Game loop
+  function update() {
+    if(gameOver) return;
+    moveBall();
+    detectCollisions();
+    draw();
     requestAnimationFrame(update);
   }
 
-  function restartGame() {
-    initGame();
-    update();
-  }
+  // Keyboard control
+  document.addEventListener("keydown", (e) => {
+    if(e.key === "ArrowLeft") {
+      paddle.x -= paddle.speed;
+      clampPaddle();
+    }
+    if(e.key === "ArrowRight") {
+      paddle.x += paddle.speed;
+      clampPaddle();
+    }
+  });
 
-  document.addEventListener("keydown", movePaddle);
+  // Mouse control
+  canvas.addEventListener("mousemove", (e) => {
+    const rect = canvas.getBoundingClientRect();
+    paddle.x = e.clientX - rect.left - paddle.width / 2;
+    clampPaddle();
+  });
 
-  // 📱 Touch drag support
+  // Touch control
   let isDragging = false;
-
   canvas.addEventListener("touchstart", (e) => {
     isDragging = true;
     movePaddleTouch(e);
   });
-
   canvas.addEventListener("touchmove", (e) => {
-    if (isDragging) movePaddleTouch(e);
+    if(isDragging) movePaddleTouch(e);
   });
-
   canvas.addEventListener("touchend", () => {
     isDragging = false;
   });
-
   function movePaddleTouch(e) {
     const rect = canvas.getBoundingClientRect();
-    const touchX = e.touches[0].clientX - rect.left;
-    paddle.x = touchX - paddle.width / 2;
-// 🖱️ Mouse control
-canvas.addEventListener("mousemove", (e) => {
-  const rect = canvas.getBoundingClientRect();
-  const mouseX = e.clientX - rect.left;
-  paddle.x = mouseX - paddle.width / 2;
-
-  // Keep paddle within bounds
-  if (paddle.x < 0) paddle.x = 0;
-  if (paddle.x + paddle.width > canvas.width)
-    paddle.x = canvas.width - paddle.width;
-});
-
-    // Keep paddle within bounds
-    if (paddle.x < 0) paddle.x = 0;
-    if (paddle.x + paddle.width > canvas.width)
-      paddle.x = canvas.width - paddle.width;
+    paddle.x = e.touches[0].clientX - rect.left - paddle.width / 2;
+    clampPaddle();
   }
 
-  // Start the game
-  bgMusic.volume = 0.4;
-  initGame();
+  // Game over
+  function endGame() {
+    gameOver = true;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#f00";
+    ctx.font = "48px Orbitron, monospace";
+    ctx.textAlign = "center";
+    ctx.shadowColor = "#f00";
+    ctx.shadowBlur = 20;
+    ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
+    gameOverSound.play();
+    bgMusic.pause();
+  }
+
+  // Restart game
+  function restartGame() {
+    gameOver = false;
+    score = 0;
+    lives = 3;
+    updateScore();
+    updateLives();
+    initBricks();
+    resetBallPaddle();
+    bgMusic.currentTime = 0;
+    bgMusic.play();
+    update();
+  }
+
+  // Start music volume
+  bgMusic.volume = 0.2;
+
+  // Button listener
+  restartBtn.addEventListener("click", restartGame);
+
+  // Initialize
+  initBricks();
+  updateScore();
+  updateLives();
+  bgMusic.play();
   update();
 </script>
+</body>
+</html>
