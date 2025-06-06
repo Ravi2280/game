@@ -3,14 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Paddle Ball Brick Breaker Game</title>
+  <title>Multi-Level Paddle Ball Game</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron&display=swap');
 
     body {
       margin: 0;
-      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-      color: #00ffe0;
       font-family: 'Orbitron', monospace;
       user-select: none;
       -webkit-user-select: none;
@@ -20,7 +18,9 @@
       align-items: center;
       height: 100vh;
       padding: 10px 0;
+      transition: background 1s ease;
     }
+
     h1 {
       margin: 10px 0 0;
       font-weight: 700;
@@ -29,7 +29,6 @@
     }
 
     canvas {
-      background: #111;
       border: 3px solid #00ffe0;
       border-radius: 12px;
       box-shadow: 0 0 15px #00ffe0;
@@ -38,6 +37,8 @@
       display: block;
       max-width: 100vw;
       max-height: 70vh;
+      background: transparent;
+      transition: background 1s ease;
     }
 
     #infoBar {
@@ -48,10 +49,7 @@
       justify-content: space-between;
       font-size: 20px;
       text-shadow: 0 0 6px #00ffe0;
-    }
-
-    #score, #highscore, #lives {
-      user-select: none;
+      color: #00ffe0;
     }
 
     #restartBtn {
@@ -71,15 +69,6 @@
       background: #0ff;
     }
 
-    /* Brick style */
-    .brick {
-      position: absolute;
-      background: #00ffe0;
-      border-radius: 4px;
-      box-shadow: 0 0 8px #00ffe0;
-    }
-
-    /* Developed by text below canvas */
     #developerCredit {
       margin-top: 20px;
       font-size: 16px;
@@ -88,6 +77,14 @@
       user-select: none;
       text-align: center;
       text-shadow: 0 0 4px #00ffe088;
+    }
+
+    #levelDisplay {
+      margin-top: 10px;
+      font-size: 22px;
+      font-weight: 700;
+      color: #00ffe0;
+      text-shadow: 0 0 8px #00ffe0;
     }
 
     /* Responsive adjustments */
@@ -105,15 +102,19 @@
       canvas {
         max-height: 60vh;
       }
+      #levelDisplay {
+        font-size: 18px;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>Paddle Ball Brick Breaker</h1>
+  <h1>Multi-Level Paddle Ball Game</h1>
 
   <canvas id="gameCanvas" width="700" height="500"></canvas>
 
   <div id="infoBar">
+    <div>Level: <span id="levelNumber">1</span></div>
     <div>Score: <span id="score">0</span></div>
     <div>High Score: <span id="highscore">0</span></div>
     <div>Lives: <span id="lives">3</span> ❤️</div>
@@ -125,22 +126,28 @@
 
   <!-- Sounds -->
   <audio id="bounceSound" src="https://actions.google.com/sounds/v1/sports/ball_bounce.ogg" preload="auto"></audio>
-  <audio id="brickSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
+  <audio id="brickSound1" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
+  <audio id="brickSound2" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" preload="auto"></audio>
+  <audio id="brickSound3" src="https://actions.google.com/sounds/v1/cartoon/clang.ogg" preload="auto"></audio>
   <audio id="gameOverSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" preload="auto"></audio>
-  <audio id="bgMusic" src="https://cdn.pixabay.com/download/audio/2022/04/21/audio_cfa39371b1.mp3?filename=futuristic-arcade-9385.mp3" preload="auto" loop></audio>
 
 <script>
   const canvas = document.getElementById("gameCanvas");
   const ctx = canvas.getContext("2d");
+
   const scoreEl = document.getElementById("score");
   const highScoreEl = document.getElementById("highscore");
   const livesEl = document.getElementById("lives");
+  const levelEl = document.getElementById("levelNumber");
   const restartBtn = document.getElementById("restartBtn");
 
   const bounceSound = document.getElementById("bounceSound");
-  const brickSound = document.getElementById("brickSound");
+  const brickSounds = [
+    document.getElementById("brickSound1"),
+    document.getElementById("brickSound2"),
+    document.getElementById("brickSound3")
+  ];
   const gameOverSound = document.getElementById("gameOverSound");
-  const bgMusic = document.getElementById("bgMusic");
 
   // Paddle properties
   const paddle = {
@@ -148,7 +155,7 @@
     height: 15,
     x: canvas.width / 2 - 60,
     y: canvas.height - 40,
-    speed: 40 // keyboard speed per keypress
+    speed: 40
   };
 
   // Ball properties - start slower
@@ -156,51 +163,122 @@
     x: canvas.width / 2,
     y: canvas.height / 2,
     radius: 10,
-    baseSpeed: 3,  // base speed, slower start
+    baseSpeed: 3,
     speed: 3,
     dx: 3,
     dy: -3,
     trail: []
   };
 
-  // Bricks properties
-  const brickRowCount = 5;
-  const brickColumnCount = 8;
-  const brickWidth = 75;
-  const brickHeight = 20;
-  const brickPadding = 10;
-  const brickOffsetTop = 50;
-  const brickOffsetLeft = 30;
-
-  let bricks = [];
+  // Game state variables
   let score = 0;
   let highScore = localStorage.getItem("highScore") || 0;
   let lives = 3;
   let gameOver = false;
+  let currentLevel = 0;
 
-  // Initialize bricks array
+  // Levels array with unique settings
+  const levels = [
+    {
+      name: "Neon Grid",
+      background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
+      brickRows: 5,
+      brickCols: 8,
+      brickColor: "#00ffe0",
+      brickShadow: "#00ffe0",
+      brickLayout: null, // default full bricks
+      ballSpeed: 3,
+      brickSoundIndex: 0
+    },
+    {
+      name: "Firestorm",
+      background: "radial-gradient(circle, #ff4e50, #f9d423)",
+      brickRows: 4,
+      brickCols: 10,
+      brickColor: "#ff4e50",
+      brickShadow: "#ff1e00",
+      brickLayout: function(rows, cols) {
+        // Checkerboard pattern of bricks
+        let layout = [];
+        for(let r=0; r<rows; r++) {
+          layout[r] = [];
+          for(let c=0; c<cols; c++) {
+            layout[r][c] = (r + c) % 2 === 0 ? 1 : 0;
+          }
+        }
+        return layout;
+      },
+      ballSpeed: 3.5,
+      brickSoundIndex: 1
+    },
+    {
+      name: "Ocean Breeze",
+      background: "linear-gradient(135deg, #00c6ff, #0072ff)",
+      brickRows: 6,
+      brickCols: 7,
+      brickColor: "#0072ff",
+      brickShadow: "#00c6ff",
+      brickLayout: function(rows, cols) {
+        // Pyramid shape bricks
+        let layout = [];
+        for(let r=0; r<rows; r++) {
+          layout[r] = [];
+          for(let c=0; c<cols; c++) {
+            layout[r][c] = (c >= r && c < cols - r) ? 1 : 0;
+          }
+        }
+        return layout;
+      },
+      ballSpeed: 4,
+      brickSoundIndex: 2
+    },
+    // Add more levels here up to 50 with different patterns/colors/backgrounds
+  ];
+
+  // Brick properties (will be updated per level)
+  let bricks = [];
+  let brickWidth, brickHeight, brickPadding, brickOffsetTop, brickOffsetLeft;
+
+  // Initialize bricks based on current level
   function initBricks() {
+    const lvl = levels[currentLevel];
+    brickPadding = 10;
+    brickOffsetTop = 50;
+    brickOffsetLeft = 30;
+
+    // Calculate brick width based on canvas width and columns
+    brickWidth = (canvas.width - brickOffsetLeft * 2 - (lvl.brickCols - 1) * brickPadding) / lvl.brickCols;
+    brickHeight = 20;
+
     bricks = [];
-    for(let c=0; c<brickColumnCount; c++) {
-      bricks[c] = [];
-      for(let r=0; r<brickRowCount; r++) {
-        bricks[c][r] = { x: 0, y: 0, status: 1 }; // status 1 = visible
+    let layout = lvl.brickLayout;
+    if (typeof layout === "function") {
+      layout = layout(lvl.brickRows, lvl.brickCols);
+    }
+    for(let r = 0; r < lvl.brickRows; r++) {
+      bricks[r] = [];
+      for(let c = 0; c < lvl.brickCols; c++) {
+        // If layout is defined, use that, else default to all bricks visible
+        let status = (layout && layout[r] && layout[r][c] === 1) ? 1 : 0;
+        bricks[r][c] = { x: 0, y: 0, status: status };
       }
     }
   }
 
-  // Draw bricks on canvas
+  // Draw bricks with level-specific colors and shadows
   function drawBricks() {
-    for(let c=0; c<brickColumnCount; c++) {
-      for(let r=0; r<brickRowCount; r++) {
-        if(bricks[c][r].status === 1) {
-          const brickX = (c*(brickWidth + brickPadding)) + brickOffsetLeft;
-          const brickY = (r*(brickHeight + brickPadding)) + brickOffsetTop;
-          bricks[c][r].x = brickX;
-          bricks[c][r].y = brickY;
-          ctx.fillStyle = '#00ffe0';
-          ctx.shadowColor = '#00ffe0';
-          ctx.shadowBlur = 10;
+    const lvl = levels[currentLevel];
+    for(let r=0; r < bricks.length; r++) {
+      for(let c=0; c < bricks[r].length; c++) {
+        const b = bricks[r][c];
+        if(b.status === 1) {
+          const brickX = c*(brickWidth + brickPadding) + brickOffsetLeft;
+          const brickY = r*(brickHeight + brickPadding) + brickOffsetTop;
+          b.x = brickX;
+          b.y = brickY;
+          ctx.fillStyle = lvl.brickColor;
+          ctx.shadowColor = lvl.brickShadow;
+          ctx.shadowBlur = 15;
           ctx.fillRect(brickX, brickY, brickWidth, brickHeight);
           ctx.shadowBlur = 0;
         }
@@ -219,11 +297,9 @@
 
   // Draw ball with trail
   function drawBall() {
-    // Add current ball position to trail
     ball.trail.push({x: ball.x, y: ball.y});
     if(ball.trail.length > 15) ball.trail.shift();
 
-    // Draw trail (fading circles)
     for(let i = 0; i < ball.trail.length; i++) {
       const pos = ball.trail[i];
       const alpha = i / ball.trail.length / 2;
@@ -234,7 +310,6 @@
       ctx.closePath();
     }
 
-    // Draw main ball
     ctx.beginPath();
     ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI*2);
     ctx.fillStyle = '#00ffe0';
@@ -253,51 +328,59 @@
 
   // Detect collisions
   function detectCollisions() {
-    // Ball collision with walls (left/right)
+    // Walls
     if(ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0) {
       ball.dx = -ball.dx;
-      bounceSound.play();
+      playSound(bounceSound);
     }
-    // Ball collision with top wall
     if(ball.y - ball.radius < 0) {
       ball.dy = -ball.dy;
-      bounceSound.play();
+      playSound(bounceSound);
     }
 
-    // Ball collision with paddle
+    // Paddle collision
     if(ball.y + ball.radius >= paddle.y &&
        ball.x >= paddle.x &&
        ball.x <= paddle.x + paddle.width) {
-      ball.dy = -ball.dy;
-      bounceSound.play();
+      ball.dy = -Math.abs(ball.dy);
+      playSound(bounceSound);
 
-      // Increase speed every 5 points (level up), max speed capped
+      score++;
+      updateScore();
+
+      // Increase speed every 5 points capped at 10
       if(score > 0 && score % 5 === 0) {
         increaseSpeed();
       }
-      score++;
-      updateScore();
     }
 
-    // Ball collision with bricks
-    for(let c=0; c<brickColumnCount; c++) {
-      for(let r=0; r<brickRowCount; r++) {
-        const b = bricks[c][r];
+    // Bricks collision
+    let bricksRemaining = 0;
+    const lvl = levels[currentLevel];
+    for(let r=0; r<bricks.length; r++) {
+      for(let c=0; c<bricks[r].length; c++) {
+        const b = bricks[r][c];
         if(b.status === 1) {
+          bricksRemaining++;
           if(ball.x > b.x && ball.x < b.x + brickWidth &&
-             ball.y - ball.radius < b.y + brickHeight && 
-             ball.y + ball.radius > b.y) {
+            ball.y - ball.radius < b.y + brickHeight && 
+            ball.y + ball.radius > b.y) {
             ball.dy = -ball.dy;
             b.status = 0;
             score += 2;
-            brickSound.play();
             updateScore();
+            playSound(brickSounds[lvl.brickSoundIndex]);
           }
         }
       }
     }
 
-    // Game over check (ball falls below paddle)
+    // Check if all bricks cleared, go next level or win
+    if(bricksRemaining === 0) {
+      nextLevel();
+    }
+
+    // Ball falls below paddle
     if(ball.y - ball.radius > canvas.height) {
       lives--;
       updateLives();
@@ -309,7 +392,13 @@
     }
   }
 
-  // Increase ball speed smoothly but capped
+  function playSound(sound) {
+    if(!sound) return;
+    sound.currentTime = 0;
+    sound.play();
+  }
+
+  // Increase ball speed gradually
   function increaseSpeed() {
     const maxSpeed = 10;
     if(Math.abs(ball.dx) < maxSpeed) {
@@ -318,7 +407,7 @@
     }
   }
 
-  // Update score display and localStorage highscore
+  // Update score display
   function updateScore() {
     scoreEl.textContent = score;
     if(score > highScore) {
@@ -333,23 +422,24 @@
     livesEl.textContent = lives;
   }
 
-  // Reset ball and paddle positions after losing a life
+  // Reset ball and paddle position
   function resetBallPaddle() {
     ball.x = canvas.width / 2;
     ball.y = canvas.height / 2;
-    ball.speed = ball.baseSpeed;
-    ball.dx = ball.baseSpeed * (Math.random() > 0.5 ? 1 : -1);
-    ball.dy = -ball.baseSpeed;
+    const baseSpeed = levels[currentLevel].ballSpeed || 3;
+    ball.speed = baseSpeed;
+    ball.dx = baseSpeed * (Math.random() > 0.5 ? 1 : -1);
+    ball.dy = -baseSpeed;
     paddle.x = canvas.width / 2 - paddle.width / 2;
   }
 
-  // Clamp paddle within canvas bounds
+  // Clamp paddle inside canvas
   function clampPaddle() {
     if(paddle.x < 0) paddle.x = 0;
     if(paddle.x + paddle.width > canvas.width) paddle.x = canvas.width - paddle.width;
   }
 
-  // Draw everything
+  // Draw all game elements
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawBricks();
@@ -366,7 +456,7 @@
     requestAnimationFrame(update);
   }
 
-  // Keyboard control
+  // Keyboard controls
   document.addEventListener("keydown", (e) => {
     if(e.key === "ArrowLeft") {
       paddle.x -= paddle.speed;
@@ -403,46 +493,72 @@
     clampPaddle();
   }
 
-  // Game over
+  // Next level logic
+  function nextLevel() {
+    currentLevel++;
+    if(currentLevel >= levels.length) {
+      winGame();
+      return;
+    }
+    lives++; // Reward 1 life per level
+    updateLives();
+    resetBallPaddle();
+    initBricks();
+    updateUI();
+  }
+
+  // Update UI elements and background for current level
+  function updateUI() {
+    const lvl = levels[currentLevel];
+    levelEl.textContent = currentLevel + 1;
+    document.body.style.background = lvl.background;
+    canvas.style.background = lvl.background;
+  }
+
+  // End game - lose
   function endGame() {
     gameOver = true;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#f00";
-    ctx.font = "48px Orbitron, monospace";
-    ctx.textAlign = "center";
-    ctx.shadowColor = "#f00";
-    ctx.shadowBlur = 20;
-    ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
-    gameOverSound.play();
-    bgMusic.pause();
+    playSound(gameOverSound);
+    alert("Game Over! Your score: " + score);
+    restartBtn.style.display = "inline-block";
+  }
+
+  // Win game
+  function winGame() {
+    gameOver = true;
+    alert("🎉 Congratulations! You cleared all levels! Your final score: " + score);
+    restartBtn.style.display = "inline-block";
   }
 
   // Restart game
-  function restartGame() {
-    gameOver = false;
+  restartBtn.addEventListener("click", () => {
+    resetGame();
+  });
+
+  function resetGame() {
     score = 0;
     lives = 3;
+    currentLevel = 0;
+    gameOver = false;
     updateScore();
     updateLives();
-    initBricks();
+    updateUI();
     resetBallPaddle();
-    bgMusic.currentTime = 0;
-    bgMusic.play();
+    initBricks();
+    restartBtn.style.display = "none";
     update();
   }
 
-  // Start music volume
-  bgMusic.volume = 0.2;
-
-  // Button listener
-  restartBtn.addEventListener("click", restartGame);
-
-  // Initialize
+  // Initialize first level on load
+  updateUI();
   initBricks();
+  resetBallPaddle();
   updateScore();
   updateLives();
-  bgMusic.play();
+  restartBtn.style.display = "none";
+
   update();
 </script>
+
 </body>
 </html>
