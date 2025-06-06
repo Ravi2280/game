@@ -19,6 +19,7 @@
       flex-direction: column;
       align-items: center;
       height: 100vh;
+      padding: 10px 0;
     }
     h1 {
       margin: 10px 0 0;
@@ -36,6 +37,7 @@
       touch-action: none;
       display: block;
       max-width: 100vw;
+      max-height: 70vh;
     }
 
     #infoBar {
@@ -76,6 +78,34 @@
       border-radius: 4px;
       box-shadow: 0 0 8px #00ffe0;
     }
+
+    /* Developed by text below canvas */
+    #developerCredit {
+      margin-top: 20px;
+      font-size: 16px;
+      color: #00ffe0cc;
+      font-weight: 600;
+      user-select: none;
+      text-align: center;
+      text-shadow: 0 0 4px #00ffe088;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 600px) {
+      #infoBar {
+        font-size: 16px;
+        width: 95vw;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+      }
+      #developerCredit {
+        font-size: 14px;
+      }
+      canvas {
+        max-height: 60vh;
+      }
+    }
   </style>
 </head>
 <body>
@@ -90,6 +120,8 @@
   </div>
 
   <button id="restartBtn">Restart Game</button>
+
+  <div id="developerCredit">Developed by Manas Rao</div>
 
   <!-- Sounds -->
   <audio id="bounceSound" src="https://actions.google.com/sounds/v1/sports/ball_bounce.ogg" preload="auto"></audio>
@@ -119,14 +151,15 @@
     speed: 40 // keyboard speed per keypress
   };
 
-  // Ball properties
+  // Ball properties - start slower
   let ball = {
     x: canvas.width / 2,
     y: canvas.height / 2,
     radius: 10,
-    speed: 5,
-    dx: 5,
-    dy: -5,
+    baseSpeed: 3,  // base speed, slower start
+    speed: 3,
+    dx: 3,
+    dy: -3,
     trail: []
   };
 
@@ -212,8 +245,6 @@
     ctx.shadowBlur = 0;
   }
 
-  // Draw score, lives and highscore text (optional, handled by DOM)
-
   // Move ball
   function moveBall() {
     ball.x += ball.dx;
@@ -240,10 +271,9 @@
       ball.dy = -ball.dy;
       bounceSound.play();
 
-      // Increase speed a little on every paddle bounce (max speed cap)
-      if(Math.abs(ball.dx) < 12) {
-        ball.dx *= 1.05;
-        ball.dy *= 1.05;
+      // Increase speed every 5 points (level up), max speed capped
+      if(score > 0 && score % 5 === 0) {
+        increaseSpeed();
       }
       score++;
       updateScore();
@@ -279,6 +309,15 @@
     }
   }
 
+  // Increase ball speed smoothly but capped
+  function increaseSpeed() {
+    const maxSpeed = 10;
+    if(Math.abs(ball.dx) < maxSpeed) {
+      ball.dx *= 1.1;
+      ball.dy *= 1.1;
+    }
+  }
+
   // Update score display and localStorage highscore
   function updateScore() {
     scoreEl.textContent = score;
@@ -298,8 +337,9 @@
   function resetBallPaddle() {
     ball.x = canvas.width / 2;
     ball.y = canvas.height / 2;
-    ball.dx = 5 * (Math.random() > 0.5 ? 1 : -1);
-    ball.dy = -5;
+    ball.speed = ball.baseSpeed;
+    ball.dx = ball.baseSpeed * (Math.random() > 0.5 ? 1 : -1);
+    ball.dy = -ball.baseSpeed;
     paddle.x = canvas.width / 2 - paddle.width / 2;
   }
 
