@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ball Bounce Game</title>
+  <style>
+    body {
+      margin: 0;
+      background: linear-gradient(135deg, #0f0f0f, #1f1f1f);
+      overflow: hidden;
+      font-family: 'Segoe UI', sans-serif;
+      color: #00ffe0;
+      text-align: center;
+    }
+    canvas {
+      background: #222;
+      display: block;
+      margin: 20px auto;
+      border: 3px solid #00ffe0;
+      box-shadow: 0 0 25px #00ffe0;
+    }
+    #scoreboard {
+      font-size: 18px;
+    }
+    button {
+      background: #00ffe0;
+      border: none;
+      color: #000;
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-top: 10px;
+      cursor: pointer;
+      border-radius: 5px;
+      transition: 0.3s ease;
+    }
+    button:hover {
+      background: #00c2a0;
+    }
+  </style>
+</head>
+<body>
+  <h1>🏓 Ball Bounce Game</h1>
+  <div id="scoreboard">
+    Score: <span id="score">0</span> | High Score: <span id="highscore">0</span>
+  </div>
+  <canvas id="gameCanvas" width="800" height="500"></canvas>
+  <button onclick="restartGame()">Restart Game</button>
+
+  <!-- 🔊 Audio -->
+  <audio id="bounceSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_2e7d6f7351.mp3" preload="auto"></audio>
+  <audio id="gameOverSound" src="https://cdn.pixabay.com/download/audio/2022/10/30/audio_d3b30c2e9c.mp3" preload="auto"></audio>
+  <audio id="bgMusic" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_3c184eb302.mp3" loop autoplay preload="auto"></audio>
+
+  <script>
+  const canvas = document.getElementById("gameCanvas");
+  const ctx = canvas.getContext("2d");
+  const scoreEl = document.getElementById("score");
+  const highScoreEl = document.getElementById("highscore");
+  const bounceSound = document.getElementById("bounceSound");
+  const gameOverSound = document.getElementById("gameOverSound");
+  const bgMusic = document.getElementById("bgMusic");
+
+  let paddle = {
+    width: 120,
+    height: 15,
+    x: canvas.width / 2 - 60,
+    y: canvas.height - 30,
+    speed: 10
+  };
+
+  let ball, score, highScore, gameOver;
+
+  function initGame() {
+    ball = {
+      x: canvas.width / 2,
+      y: canvas.height / 2,
+      radius: 10,
+      dx: 4,
+      dy: -4
+    };
+    score = 0;
+    gameOver = false;
+    scoreEl.textContent = score;
+    highScore = localStorage.getItem("highScore") || 0;
+    highScoreEl.textContent = highScore;
+  }
+
+  function drawPaddle() {
+    ctx.fillStyle = "#00ffe0";
+    ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+  }
+
+  function drawBall() {
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+    ctx.fillStyle = "#fff";
+    ctx.fill();
+    ctx.closePath();
+  }
+
+  function movePaddle(e) {
+    if (e.key === "ArrowLeft" && paddle.x > 0) paddle.x -= paddle.speed;
+    if (e.key === "ArrowRight" && paddle.x + paddle.width < canvas.width)
+      paddle.x += paddle.speed;
+  }
+
+  function update() {
+    if (gameOver) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawPaddle();
+    drawBall();
+
+    ball.x += ball.dx;
+    ball.y += ball.dy;
+
+    // Wall collision
+    if (ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0) {
+      ball.dx *= -1;
+    }
+
+    if (ball.y - ball.radius < 0) {
+      ball.dy *= -1;
+    }
+
+    // Paddle bounce
+    if (
+      ball.y + ball.radius >= paddle.y &&
+      ball.x >= paddle.x &&
+      ball.x <= paddle.x + paddle.width
+    ) {
+      ball.dy *= -1;
+      score++;
+      scoreEl.textContent = score;
+      bounceSound.currentTime = 0;
+      bounceSound.play();
+    }
+
+    // Game Over
+    if (ball.y + ball.radius > canvas.height) {
+      gameOver = true;
+      ctx.font = "36px Arial";
+      ctx.fillStyle = "#f00";
+      ctx.fillText("Game Over", canvas.width / 2 - 100, canvas.height / 2);
+      gameOverSound.play();
+
+      if (score > highScore) {
+        localStorage.setItem("highScore", score);
+        highScoreEl.textContent = score;
+      }
+    }
+
+    requestAnimationFrame(update);
+  }
+
+  function restartGame() {
+    initGame();
+    update();
+  }
+
+  document.addEventListener("keydown", movePaddle);
+
+  // 📱 Touch drag support
+  let isDragging = false;
+
+  canvas.addEventListener("touchstart", (e) => {
+    isDragging = true;
+    movePaddleTouch(e);
+  });
+
+  canvas.addEventListener("touchmove", (e) => {
+    if (isDragging) movePaddleTouch(e);
+  });
+
+  canvas.addEventListener("touchend", () => {
+    isDragging = false;
+  });
+
+  function movePaddleTouch(e) {
+    const rect = canvas.getBoundingClientRect();
+    const touchX = e.touches[0].clientX - rect.left;
+    paddle.x = touchX - paddle.width / 2;
+// 🖱️ Mouse control
+canvas.addEventListener("mousemove", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  paddle.x = mouseX - paddle.width / 2;
+
+  // Keep paddle within bounds
+  if (paddle.x < 0) paddle.x = 0;
+  if (paddle.x + paddle.width > canvas.width)
+    paddle.x = canvas.width - paddle.width;
+});
+
+    // Keep paddle within bounds
+    if (paddle.x < 0) paddle.x = 0;
+    if (paddle.x + paddle.width > canvas.width)
+      paddle.x = canvas.width - paddle.width;
+  }
+
+  // Start the game
+  bgMusic.volume = 0.4;
+  initGame();
+  update();
+</script>
