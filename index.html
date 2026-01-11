@@ -1,611 +1,181 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Brick Breaker - 50 Levels</title>
-<style>
-  * {
-    box-sizing: border-box;
-  }
-  body {
-    margin: 0;
-    overflow: hidden;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #000;
-    color: white;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  h1 {
-    margin: 10px 0 5px;
-    user-select: none;
-  }
-  #gameContainer {
-    position: relative;
-    background: black;
-    margin: 10px 0;
-  }
-  canvas {
-    display: block;
-    background: black;
-    border: 2px solid white;
-    border-radius: 10px;
-  }
-  #infoBar {
-    width: 100%;
-    max-width: 600px;
-    display: flex;
-    justify-content: space-around;
-    font-weight: bold;
-    margin-bottom: 10px;
-  }
-  #restartBtn {
-    padding: 10px 20px;
-    font-size: 1rem;
-    border: none;
-    border-radius: 5px;
-    background: #1e90ff;
-    color: white;
-    cursor: pointer;
-    display: none;
-    user-select: none;
-  }
-  #developedBy {
-    user-select: none;
-    margin: 5px 0 15px;
-    font-size: 1rem;
-    color: #888;
-    display: none;
-  }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elite UC Store | Fast & Secure</title>
+    <style>
+        :root {
+            --primary: #f3ad14;
+            --secondary: #28a745;
+            --bg: #0f1218;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --text: #ffffff;
+        }
 
-  /* Show "Developed by" only on small/mobile */
-  @media (max-width: 600px) {
-    #developedBy {
-      display: block;
-    }
-  }
-</style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container { max-width: 800px; width: 100%; }
+
+        header { text-align: center; margin-bottom: 30px; }
+        header h1 { color: var(--primary); text-transform: uppercase; letter-spacing: 2px; }
+
+        .section-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px;
+        }
+
+        input[type="text"], input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.3);
+            color: white;
+            margin-top: 10px;
+            box-sizing: border-box;
+        }
+
+        /* Offers */
+        .offers-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .offer-card { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+        .price { color: var(--primary); font-weight: bold; font-size: 1.2rem; }
+
+        /* Bank Details */
+        .bank-details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .detail-item { background: rgba(0,0,0,0.4); padding: 10px; border-radius: 8px; font-size: 0.9rem; }
+        .label { color: #888; display: block; font-size: 0.75rem; }
+
+        /* Submit Button */
+        .btn-submit {
+            background: var(--primary);
+            color: #000;
+            border: none;
+            padding: 15px 30px;
+            width: 100%;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: 0.3s;
+        }
+        .btn-submit:hover { opacity: 0.9; transform: scale(0.98); }
+
+        /* Success Message Styling */
+        #success-box {
+            display: none; /* Hidden by default */
+            text-align: center;
+            background: rgba(40, 167, 69, 0.1);
+            border: 2px solid var(--secondary);
+            padding: 40px;
+            border-radius: 15px;
+        }
+        #timer { font-size: 2.5rem; color: var(--primary); margin: 20px 0; font-weight: bold; }
+        .check-icon { font-size: 50px; color: var(--secondary); margin-bottom: 10px; }
+
+        @media (max-width: 600px) { .bank-details { grid-template-columns: 1fr; } }
+    </style>
 </head>
 <body>
 
-<h1>Brick Breaker (@DEVELOPED BY MANAS RAO)</h1>
-<div id="gameContainer">
-  <canvas id="gameCanvas" width="480" height="320"></canvas>
+<div class="container">
+    <header>
+        <h1>BGMI UC STORE</h1>
+    </header>
+
+    <div id="main-form">
+        <div class="section-card">
+            <h3>Step 1: Game UID</h3>
+            <input type="text" id="uid" placeholder="Enter Character ID (e.g. 51234455)">
+        </div>
+
+        <div class="offers-grid">
+            <div class="offer-card"><h3>5,300 UC</h3><p class="price">₹1,200</p></div>
+            <div class="offer-card"><h3>8,100 UC</h3><p class="price">₹1,800</p></div>
+            <div class="offer-card"><h3>12,500 UC</h3><p class="price">₹2,500</p></div>
+        </div>
+
+        <div class="section-card">
+            <h3 style="color:var(--primary)">Step 2: Transfer Payment</h3>
+            <div class="bank-details">
+                <div class="detail-item"><span class="label">Bank</span><b>BANK OF MAHARASHTRA</b></div>
+                <div class="detail-item"><span class="label">Name</span><b>AJAY KUMAR</b></div>
+                <div class="detail-item"><span class="label">A/C No</span><b>60557155782</b></div>
+                <div class="detail-item"><span class="label">IFSC</span><b>MAHB0002073</b></div>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <h3>Step 3: Verification</h3>
+            <label>Transaction UTR Number</label>
+            <input type="text" id="utr" placeholder="12-digit UTR Number">
+            
+            <label style="display:block; margin-top:15px;">Upload Payment Screenshot</label>
+            <input type="file" id="screenshot" accept="image/*">
+
+            <button class="btn-submit" onclick="submitPayment()">SUBMIT ORDER</button>
+        </div>
+    </div>
+
+    <div id="success-box">
+        <div class="check-icon">✔</div>
+        <h2>Payment Submitted Successfully!</h2>
+        <p>Our team is verifying your UTR and Screenshot.<br>Your UC will be credited to <b>ID: <span id="display-uid"></span></b></p>
+        <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:20px 0;">
+        <p>Estimated Waiting Time:</p>
+        <div id="timer">60:00</div>
+        <p style="color: #aaa; font-size: 0.9rem;">Please do not close or refresh this page.</p>
+    </div>
 </div>
-<div id="infoBar">
-  <div>Score: <span id="score">0</span></div>
-  <div>Lives: <span id="lives">10</span></div>
-  <div>Level: <span id="level">1</span></div>
-</div>
-<button id="restartBtn">Restart Game</button>
-<div id="developedBy">Developed by Manas Rao</div>
 
 <script>
-// --- Constants ---
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-const scoreEl = document.getElementById("score");
-const livesEl = document.getElementById("lives");
-const levelEl = document.getElementById("level");
-const restartBtn = document.getElementById("restartBtn");
+    function submitPayment() {
+        const uid = document.getElementById('uid').value;
+        const utr = document.getElementById('utr').value;
 
-const paddleWidth = 100;
-const paddleHeight = 15;
-const ballRadius = 10;
+        if(uid === "" || utr === "") {
+            alert("Please enter both UID and UTR Number");
+            return;
+        }
 
-// Sounds (simple beep and clicks)
-const sounds = [
-  new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"),
-  new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"),
-  new Audio("https://actions.google.com/sounds/v1/cartoon/metal_thunk.ogg"),
-];
-const gameOverSound = new Audio("https://actions.google.com/sounds/v1/cartoon/slide_whistle_to_drum_hit.ogg");
-const levelUpSound = new Audio("https://actions.google.com/sounds/v1/cartoon/concussive_hit_guitar_boing.ogg");
+        // Hide form and show success box
+        document.getElementById('main-form').style.display = 'none';
+        document.getElementById('success-box').style.display = 'block';
+        document.getElementById('display-uid').innerText = uid;
 
-// --- Game Variables ---
-let score = 0;
-let lives = 3;
-let currentLevel = 0;
-let gameOver = false;
+        // Start 1 Hour Countdown
+        let time = 3600; // 3600 seconds = 1 hour
+        const timerElement = document.getElementById('timer');
 
-let ballX, ballY;
-let ballSpeedX, ballSpeedY;
-let paddleX;
+        const countdown = setInterval(() => {
+            let minutes = Math.floor(time / 60);
+            let seconds = time % 60;
 
-let bricks = [];
+            seconds = seconds < 10 ? '0' + seconds : seconds;
+            minutes = minutes < 10 ? '0' + minutes : minutes;
 
-// --- Levels Array (50 levels) ---
-const levels = [
-  {
-    name: "Blue Sky",
-    background: "linear-gradient(135deg, #87CEFA, #00BFFF)",
-    brickRows: 4,
-    brickCols: 8,
-    brickColor: "#1E90FF",
-    brickShadow: "#104E8B",
-    brickLayout: () => Array(4).fill().map(() => Array(8).fill(1)),
-    ballSpeed: 4,
-    brickSoundIndex: 0,
-  },
-  {
-    name: "Sunset Glow",
-    background: "linear-gradient(135deg, #FF7E5F, #FEB47B)",
-    brickRows: 5,
-    brickCols: 9,
-    brickColor: "#FF4500",
-    brickShadow: "#B22222",
-    brickLayout: () => Array(5).fill().map(() => Array(9).fill(1)),
-    ballSpeed: 4.2,
-    brickSoundIndex: 1,
-  },
-  {
-    name: "Forest Canopy",
-    background: "linear-gradient(135deg, #228B22, #6B8E23)",
-    brickRows: 6,
-    brickCols: 10,
-    brickColor: "#32CD32",
-    brickShadow: "#006400",
-    brickLayout: () => {
-      let layout = [];
-      for (let r = 0; r < 6; r++) {
-        let row = [];
-        for (let c = 0; c < 10; c++) {
-          row.push((r + c) % 2 === 0 ? 1 : 0);
-        }
-        layout.push(row);
-      }
-      return layout;
-    },
-    ballSpeed: 4.5,
-    brickSoundIndex: 2,
-  },
-  {
-    name: "Ocean Waves",
-    background: "linear-gradient(135deg, #1E3C72, #2A5298)",
-    brickRows: 5,
-    brickCols: 12,
-    brickColor: "#00CED1",
-    brickShadow: "#008B8B",
-    brickLayout: () => {
-      let layout = [];
-      for (let r = 0; r < 5; r++) {
-        let row = [];
-        for (let c = 0; c < 12; c++) {
-          row.push(r % 2 === 0 ? 1 : 0);
-        }
-        layout.push(row);
-      }
-      return layout;
-    },
-    ballSpeed: 4.7,
-    brickSoundIndex: 0,
-  },
-  {
-    name: "Lava Burst",
-    background: "linear-gradient(135deg, #FF4500, #FF6347)",
-    brickRows: 7,
-    brickCols: 7,
-    brickColor: "#FF6347",
-    brickShadow: "#B22222",
-    brickLayout: () => {
-      let layout = [];
-      for (let r = 0; r < 7; r++) {
-        let row = [];
-        for (let c = 0; c < 7; c++) {
-          row.push(c >= r && c < 7 - r ? 1 : 0);
-        }
-        layout.push(row);
-      }
-      return layout;
-    },
-    ballSpeed: 5,
-    brickSoundIndex: 1,
-  },
-  {
-    name: "Neon Grid",
-    background: "linear-gradient(135deg, #0ff, #0a0a0a)",
-    brickRows: 6,
-    brickCols: 12,
-    brickColor: "#39FF14",
-    brickShadow: "#008000",
-    brickLayout: () => Array(6).fill().map(() => Array(12).fill(1)),
-    ballSpeed: 5.2,
-    brickSoundIndex: 2,
-  },
-  {
-    name: "Purple Haze",
-    background: "linear-gradient(135deg, #8A2BE2, #4B0082)",
-    brickRows: 6,
-    brickCols: 10,
-    brickColor: "#9400D3",
-    brickShadow: "#551A8B",
-    brickLayout: () => {
-      let layout = [];
-      for (let r = 0; r < 6; r++) {
-        let row = [];
-        for (let c = 0; c < 10; c++) {
-          row.push(c % 2 === 0 ? 1 : 0);
-        }
-        layout.push(row);
-      }
-      return layout;
-    },
-    ballSpeed: 5.4,
-    brickSoundIndex: 0,
-  },
-  {
-    name: "Golden Glow",
-    background: "linear-gradient(135deg, #FFD700, #FFA500)",
-    brickRows: 7,
-    brickCols: 9,
-    brickColor: "#FFD700",
-    brickShadow: "#B8860B",
-    brickLayout: () => {
-      let layout = [];
-      const mid = Math.floor(9 / 2);
-      for (let r = 0; r < 7; r++) {
-        let row = [];
-        for (let c = 0; c < 9; c++) {
-          row.push(Math.abs(mid - c) <= r ? 1 : 0);
-        }
-        layout.push(row);
-      }
-      return layout;
-    },
-    ballSpeed: 5.6,
-    brickSoundIndex: 1,
-  },
-  {
-    name: "Ice Shards",
-    background: "linear-gradient(135deg, #B0E0E6, #ADD8E6)",
-    brickRows: 6,
-    brickCols: 11,
-    brickColor: "#00BFFF",
-    brickShadow: "#1E90FF",
-    brickLayout: () => {
-      let layout = [];
-      for (let r = 0; r < 6; r++) {
-        let row = [];
-        for (let c = 0; c < 11; c++) {
-          row.push(Math.random() > 0.4 ? 1 : 0);
-        }
-        layout.push(row);
-      }
-      return layout;
-    },
-    ballSpeed: 5.8,
-    brickSoundIndex: 2,
-  },
-  {
-    name: "Candy Stripes",
-    background: "linear-gradient(135deg, #FF69B4, #FFB6C1)",
-    brickRows: 7,
-    brickCols: 10,
-    brickColor: "#FF1493",
-    brickShadow: "#C71585",
-    brickLayout: () => {
-      let layout = [];
-      for (let r = 0; r < 7; r++) {
-        let row = [];
-        for (let c = 0; c < 10; c++) {
-          row.push(c % 3 === 0 ? 1 : 0);
-        }
-        layout.push(row);
-      }
-      return layout;
-    },
-    ballSpeed: 6,
-    brickSoundIndex: 0,
-  },
-];
+            timerElement.innerHTML = `${minutes}:${seconds}`;
+            time--;
 
-// Add remaining levels (11 to 50) dynamically with gradual difficulty
-for (let i = 11; i <= 50; i++) {
-  levels.push({
-    name: `Level ${i}`,
-    background: `linear-gradient(135deg, hsl(${(i * 35) % 360}, 70%, 60%), hsl(${(i * 35 + 50) % 360}, 60%, 40%))`,
-    brickRows: 5 + Math.floor(i / 10),
-    brickCols: 8 + (i % 5),
-    brickColor: `hsl(${(i * 35 + 100) % 360}, 80%, 50%)`,
-    brickShadow: `hsl(${(i * 35 + 70) % 360}, 70%, 30%)`,
-    brickLayout: () => {
-      let rows = 5 + Math.floor(i / 10);
-      let cols = 8 + (i % 5);
-      let layout = [];
-      for (let r = 0; r < rows; r++) {
-        let row = [];
-        for (let c = 0; c < cols; c++) {
-          row.push(((r + c + i) % 3 !== 0) ? 1 : 0);
-        }
-        layout.push(row);
-      }
-      return layout;
-    },
-    ballSpeed: 5 + i * 0.1,
-    brickSoundIndex: i % 3,
-  });
-}
-
-// --- Initialize bricks for current level ---
-function initBricks() {
-  bricks = [];
-  const lvl = levels[currentLevel];
-  const layout = lvl.brickLayout();
-  for (let r = 0; r < lvl.brickRows; r++) {
-    bricks[r] = [];
-    for (let c = 0; c < lvl.brickCols; c++) {
-      bricks[r][c] = layout[r][c] === 1 ? { status: 1 } : { status: 0 };
+            if (time < 0) {
+                clearInterval(countdown);
+                timerElement.innerHTML = "PROCESSED";
+            }
+        }, 1000);
     }
-  }
-}
-
-// --- Draw bricks ---
-function drawBricks() {
-  const lvl = levels[currentLevel];
-  const brickWidth = (canvas.width - (lvl.brickCols + 1) * 6) / lvl.brickCols;
-  const brickHeight = 20;
-  for (let r = 0; r < lvl.brickRows; r++) {
-    for (let c = 0; c < lvl.brickCols; c++) {
-      if (bricks[r][c].status === 1) {
-        let x = c * (brickWidth + 6) + 6;
-        let y = r * (brickHeight + 6) + 40;
-        // Brick fill with shadow
-        ctx.fillStyle = lvl.brickColor;
-        ctx.shadowColor = lvl.brickShadow;
-        ctx.shadowBlur = 6;
-        ctx.fillRect(x, y, brickWidth, brickHeight);
-        ctx.shadowBlur = 0;
-      }
-    }
-  }
-}
-
-// --- Draw paddle ---
-function drawPaddle() {
-  ctx.fillStyle = "#FFFFFF";
-  ctx.fillRect(paddleX, canvas.height - paddleHeight - 10, paddleWidth, paddleHeight);
-}
-
-// --- Draw ball ---
-function drawBall() {
-  ctx.beginPath();
-  ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
-  ctx.fillStyle = "#FFD700";
-  ctx.shadowColor = "#FFA500";
-  ctx.shadowBlur = 15;
-  ctx.fill();
-  ctx.shadowBlur = 0;
-  ctx.closePath();
-}
-
-// --- Draw all game elements ---
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawBricks();
-  drawPaddle();
-  drawBall();
-}
-
-// --- Update score display ---
-function updateScore() {
-  scoreEl.textContent = score;
-}
-
-// --- Update lives display ---
-function updateLives() {
-  livesEl.textContent = lives;
-}
-
-// --- Update level display and background ---
-function updateUI() {
-  const lvl = levels[currentLevel];
-  levelEl.textContent = currentLevel + 1;
-  document.body.style.background = lvl.background;
-  canvas.style.background = lvl.background;
-}
-
-// --- Reset ball and paddle position ---
-function resetBallPaddle() {
-  ballX = canvas.width / 2;
-  ballY = canvas.height - paddleHeight - 25;
-  const speed = levels[currentLevel].ballSpeed;
-  ballSpeedX = speed * (Math.random() > 0.5 ? 1 : -1);
-  ballSpeedY = -speed;
-  paddleX = (canvas.width - paddleWidth) / 2;
-}
-
-// --- Collision detection ---
-function collisionDetection() {
-  const lvl = levels[currentLevel];
-  const brickWidth = (canvas.width - (lvl.brickCols + 1) * 6) / lvl.brickCols;
-  const brickHeight = 20;
-
-  for (let r = 0; r < lvl.brickRows; r++) {
-    for (let c = 0; c < lvl.brickCols; c++) {
-      let b = bricks[r][c];
-      if (b.status === 1) {
-        let brickX = c * (brickWidth + 6) + 6;
-        let brickY = r * (brickHeight + 6) + 40;
-
-        if (
-          ballX > brickX &&
-          ballX < brickX + brickWidth &&
-          ballY - ballRadius < brickY + brickHeight &&
-          ballY + ballRadius > brickY
-        ) {
-          ballSpeedY = -ballSpeedY;
-          b.status = 0;
-          score += 10;
-          playSound(levels[currentLevel].brickSoundIndex);
-          updateScore();
-
-          // Check if all bricks broken for level up
-          if (checkAllBricksCleared()) {
-            levelUp();
-          }
-        }
-      }
-    }
-  }
-}
-
-// --- Check if all bricks cleared ---
-function checkAllBricksCleared() {
-  for (let r = 0; r < levels[currentLevel].brickRows; r++) {
-    for (let c = 0; c < levels[currentLevel].brickCols; c++) {
-      if (bricks[r][c].status === 1) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-// --- Level up ---
-function levelUp() {
-  playSound("levelUp");
-  currentLevel++;
-  if (currentLevel >= levels.length) {
-    alert(`🎉 You completed all 50 levels! Final score: ${score}`);
-    gameOver = true;
-    restartBtn.style.display = "inline-block";
-    return;
-  }
-  lives = 1; // 1 life per level
-  updateLives();
-  initBricks();
-  updateUI();
-  resetBallPaddle();
-}
-
-// --- Play sound by index or special ---
-function playSound(indexOrName) {
-  if (indexOrName === "levelUp") {
-    levelUpSound.play();
-  } else if (indexOrName === "gameOver") {
-    gameOverSound.play();
-  } else if (typeof indexOrName === "number") {
-    sounds[indexOrName].currentTime = 0;
-    sounds[indexOrName].play();
-  }
-}
-
-// --- End game ---
-function endGame() {
-  gameOver = true;
-  playSound("gameOver");
-  alert(`Game Over! Your final score: ${score}`);
-  restartBtn.style.display = "inline-block";
-}
-
-// --- Update game logic ---
-function update() {
-  if (gameOver) return;
-
-  ballX += ballSpeedX;
-  ballY += ballSpeedY;
-
-  // Ball bounce off left/right walls
-  if (ballX + ballRadius > canvas.width || ballX - ballRadius < 0) {
-    ballSpeedX = -ballSpeedX;
-  }
-  // Ball bounce off top
-  if (ballY - ballRadius < 0) {
-    ballSpeedY = -ballSpeedY;
-  }
-  // Ball hits paddle
-  if (
-    ballY + ballRadius > canvas.height - paddleHeight - 10 &&
-    ballX > paddleX &&
-    ballX < paddleX + paddleWidth
-  ) {
-    ballSpeedY = -ballSpeedY;
-
-    // Add paddle hit sound
-    playSound(1);
-
-    // Control ball X speed based on where it hits the paddle
-    let hitPos = ballX - (paddleX + paddleWidth / 2);
-    ballSpeedX = hitPos * 0.15;
-  }
-  // Ball missed paddle
-  if (ballY + ballRadius > canvas.height) {
-    lives--;
-    updateLives();
-    if (lives <= 0) {
-      endGame();
-    } else {
-      resetBallPaddle();
-    }
-  }
-
-  collisionDetection();
-  draw();
-  requestAnimationFrame(update);
-}
-
-// --- Paddle movement control ---
-function movePaddle(x) {
-  paddleX = x - paddleWidth / 2;
-  if (paddleX < 0) paddleX = 0;
-  if (paddleX + paddleWidth > canvas.width) paddleX = canvas.width - paddleWidth;
-}
-
-// Mouse movement
-canvas.addEventListener("mousemove", (e) => {
-  const rect = canvas.getBoundingClientRect();
-  movePaddle(e.clientX - rect.left);
-});
-
-// Touch movement
-canvas.addEventListener("touchmove", (e) => {
-  e.preventDefault();
-  const rect = canvas.getBoundingClientRect();
-  let touchX = e.touches[0].clientX - rect.left;
-  movePaddle(touchX);
-}, { passive: false });
-
-// Keyboard controls
-document.addEventListener("keydown", (e) => {
-  if (gameOver) return;
-  const step = 25;
-  if (e.key === "ArrowLeft") {
-    paddleX -= step;
-    if (paddleX < 0) paddleX = 0;
-  } else if (e.key === "ArrowRight") {
-    paddleX += step;
-    if (paddleX + paddleWidth > canvas.width) paddleX = canvas.width - paddleWidth;
-  }
-});
-
-// --- Restart game ---
-restartBtn.addEventListener("click", () => {
-  score = 0;
-  lives = 3;
-  currentLevel = 0;
-  gameOver = false;
-  restartBtn.style.display = "none";
-  initBricks();
-  updateUI();
-  updateScore();
-  updateLives();
-  resetBallPaddle();
-  update();
-});
-
-// --- Initialize game ---
-function init() {
-  initBricks();
-  updateUI();
-  updateScore();
-  updateLives();
-  resetBallPaddle();
-  update();
-}
-
-init();
 </script>
 
 </body>
